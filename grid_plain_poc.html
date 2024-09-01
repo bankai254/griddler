@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Griddler</title> <!-- Like Riddler but it's a grid. I had Batman playing in the background (◣_◢) -->
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #f4f4f4;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            height: 100vh;  /* We want to see the entire grid in a single view i.e. without scrolling */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-center {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 5px 0 0 0;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        #undoButton {
+            padding: 7px 25px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .grid-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .grid {  /* Keeps the grid nice and tight in the view */
+            display: grid;
+            height: 99%;
+            aspect-ratio: 8 / 5;
+        }
+
+        .cell {
+            background-color: #00b503;
+            border: 1px solid #FFF;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+
+        .clicked {
+            background-color: #e60000;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="control-center">
+            <div class="title">Griddler</div>
+            <button id="undoButton">Undo</button>
+        </div>
+        <div class="grid-container">
+            <div id="grid" class="grid"></div>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const grid = document.getElementById('grid');
+        const undoButton = document.getElementById('undoButton');
+
+        // Grid dimensions
+        const ROWS = 50;
+        const COLS = 80;
+
+        // State variables
+        let gridState = [];
+        let gridHistory = [];
+        let currentHistoryIndex = -1;
+
+        // Set up the grid. Good to remember that this is also called on window resize
+        function setupGrid() {
+            // Set grid dimensions
+            grid.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+            grid.style.gridTemplateRows = `repeat(${ROWS}, 1fr)`;
+
+            // Clear existing grid
+            grid.innerHTML = '';
+
+            // Create grid cells
+            for (let i = 0; i < ROWS * COLS; i++) {
+                const cell = document.createElement('div');
+                cell.id = i;
+                cell.classList.add('cell');
+                cell.addEventListener('click', function () {
+                    toggleCell(i);
+                });
+                grid.appendChild(cell);
+            }
+
+            // If there's no history, initialize with an empty state
+            if (gridHistory.length === 0) {
+                gridState = new Array(ROWS * COLS).fill(false);
+                gridHistory.push([...gridState]);
+                currentHistoryIndex = 0;
+            }
+
+            updateGridDisplay();
+        }
+
+        // Toggle cell state
+        function toggleCell(index) {
+            // Toggle the cell state
+            gridState[index] = !gridState[index];
+
+            // Add new state to history, removing any future states if we're not at the end
+            gridHistory = gridHistory.slice(0, currentHistoryIndex + 1);
+            gridHistory.push([...gridState]);
+            currentHistoryIndex++;
+
+            updateGridDisplay();
+        }
+
+        // Update grid display based on current state
+        function updateGridDisplay() {
+            gridState.forEach((state, index) => {
+                const cell = document.getElementById(index);
+                if (state) {
+                    cell.classList.add('clicked');
+                } else {
+                    cell.classList.remove('clicked');
+                }
+            });
+            updateUndoButton(); // Check if the Undo button needs to be active or disabled
+        }
+
+        // Undo last action
+        function undo() {
+            if (currentHistoryIndex > 0) {
+                currentHistoryIndex--;
+                gridState = [...gridHistory[currentHistoryIndex]];
+                updateGridDisplay();
+            }
+        }
+
+        // Update undo button state
+        function updateUndoButton() {
+            undoButton.disabled = currentHistoryIndex <= 0;
+        }
+
+        // Add event listeners
+        undoButton.addEventListener('click', undo);
+        window.addEventListener('resize', setupGrid);
+
+        // Initial setup
+        setupGrid();
+    </script>
+</body>
+
+</html>
